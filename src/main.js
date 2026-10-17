@@ -822,7 +822,7 @@ function drawCompassStars() {
   });
 }
 
-const uiBlocks = ['.title-block', '#info', '#side-panel', '.panel-tabs', '.time-dock', '#table'].map((sel) => document.querySelector(sel));
+const uiBlocks = ['#info', '#side-panel', '.panel-tabs', '.time-dock', '#table'].map((sel) => document.querySelector(sel));
 
 function uiRects() {
   return uiBlocks
@@ -1446,7 +1446,7 @@ function legendHtml() {
 }
 
 function aboutHtml() {
-  return `<p class="about-place">${LOCATION.name}<br><span>${LAT.toFixed(2)}° N, ${LON.toFixed(2)}° E · ${LOCATION.zoneName}</span></p>
+  return `<p class="about-place"><a href="https://github.com/kylemcdonald/polowat-star-compass" target="_blank" rel="noopener">Polowat Star Compass</a><br><span>${LAT.toFixed(2)}° N, ${LON.toFixed(2)}° E · ${LOCATION.zoneName}</span></p>
     <p class="about-credit">Made with the supervision of Mario Benito from Inowon in Polowat.</p>
     <p>The 32 points of the Weriyaeng star compass, with the stars that rise and set on them.
       Rising points are <em>Tan</em>, setting points <em>Tolon</em>.</p>
@@ -1624,7 +1624,9 @@ const clamp01 = (value) => Math.min(1, Math.max(0, value));
 
 // Range input whose drag locks the pointer, so dragging keeps going past the ends and wraps
 // around (e.g. 23:59 -> 00:00). Clicking still jumps to the clicked position. Same control as tntm.
-// onChange(wrapped, raw): raw is the unwrapped value during a drag, null for keyboard input.
+// Touch and pen use the plain native slider: its own drag would fight the custom one and the
+// value (and the sky) would jitter between the two.
+// onChange(wrapped, raw): raw is the unwrapped value during a mouse drag, null otherwise.
 function loopingRange(input, { period, round, onStart, onChange }) {
   const wrap = (raw) => {
     const min = Number(input.min);
@@ -1634,7 +1636,7 @@ function loopingRange(input, { period, round, onStart, onChange }) {
   };
 
   input.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0) return;
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
     event.preventDefault();
     const min = Number(input.min);
     const max = Number(input.max);
@@ -1666,16 +1668,14 @@ function loopingRange(input, { period, round, onStart, onChange }) {
     document.addEventListener('pointermove', handleMove);
     document.addEventListener('pointerup', stop);
     document.addEventListener('pointercancel', stop);
-    if (event.pointerType === 'mouse') {
-      try {
-        Promise.resolve(input.requestPointerLock?.()).catch(() => {});
-      } catch {
-        // Pointer lock is optional; without it the drag still works within the window.
-      }
+    try {
+      Promise.resolve(input.requestPointerLock?.()).catch(() => {});
+    } catch {
+      // Pointer lock is optional; without it the drag still works within the window.
     }
   });
 
-  // Keyboard (arrow keys) still works through the native input.
+  // Keyboard (arrow keys) and touch go through the native input.
   input.addEventListener('input', () => {
     onStart?.();
     onChange(Number(input.value), null);
