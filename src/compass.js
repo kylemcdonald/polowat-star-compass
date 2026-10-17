@@ -26,8 +26,8 @@ export function magneticDeclination(ms) {
 }
 
 export const HEADINGS = {
-  rising: { polowat: 'Taen', western: 'Rising' },
-  setting: { polowat: 'Tubwun', western: 'Setting' },
+  rising: { polowat: 'Tan', western: 'Rising' },
+  setting: { polowat: 'Tolon', western: 'Setting' },
 };
 
 // J2000 positions (RA hours, Dec degrees), V magnitudes and the star's own Polowat name.
