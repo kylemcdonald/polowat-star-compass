@@ -270,6 +270,7 @@ void main() {
 
 function initGL() {
   if (!gl) {
+    registerServiceWorker();
     return;
   }
   const compile = (type, src) => {
@@ -304,26 +305,93 @@ function initGL() {
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
-  const image = new Image();
-  image.onload = () => {
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-    gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    const ext = gl.getExtension('EXT_texture_filter_anisotropic');
-    if (ext) {
-      gl.texParameterf(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, 8);
+  // Smallest first so the Milky Way appears quickly on a slow connection, then a sharper copy
+  // (straight to the sharper one when it comes from the offline cache).
+  // Only large screens on a fast connection fetch the full 4096 px panorama.
+  const sources = ['assets/milkyway-1024.webp', 'assets/milkyway-2048.webp'];
+  if (navigator.serviceWorker?.controller) sources.shift();
+  const connection = navigator.connection;
+  const fast = !connection?.saveData && !/2g|3g/.test(connection?.effectiveType ?? '');
+  if (fast && Math.max(W, H) * dpr > 2200 && gl.getParameter(gl.MAX_TEXTURE_SIZE) >= 4096) {
+    sources.push('assets/milkyway-4096.webp');
+  }
+  const loadNext = () => {
+    if (!sources.length) {
+      registerServiceWorker();
+      return;
     }
-    milkyReady = true;
-    invalidate();
+    const image = new Image();
+    image.onload = () => {
+      uploadMilkyWay(texture, image);
+      loadNext();
+    };
+    image.onerror = loadNext;
+    image.src = sources.shift();
   };
-  image.src = 'assets/milkyway-4096.jpg';
+  loadNext();
   gl.uniform1i(glUniforms.uMilky, 0);
 }
+
+function uploadMilkyWay(texture, image) {
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const ext = gl.getExtension('EXT_texture_filter_anisotropic');
+  if (ext) {
+    gl.texParameterf(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, 8);
+  }
+  milkyReady = true;
+  invalidate();
+}
+
+// ---------------------------------------------------------------------------
+// Offline app: the service worker caches the page so it opens with no connection, and
+// Android offers to install it. Registered once the Milky Way has loaded, so on a slow
+// connection the caching doesn't compete with the first view.
+
+let installPrompt = null;
+let swRegistered = false;
+
+function registerServiceWorker() {
+  if (swRegistered || !('serviceWorker' in navigator)) return;
+  swRegistered = true;
+  navigator.serviceWorker.register('sw.js').catch((error) => console.warn('Offline support unavailable', error));
+}
+
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  syncAppStatus();
+});
+
+window.addEventListener('appinstalled', () => {
+  installPrompt = null;
+  syncAppStatus();
+});
+
+navigator.serviceWorker?.addEventListener('controllerchange', () => syncAppStatus());
+
+function syncAppStatus() {
+  document.querySelectorAll('[data-install]').forEach((btn) => {
+    btn.hidden = !installPrompt;
+  });
+  document.querySelectorAll('[data-offline]').forEach((el) => {
+    el.hidden = !navigator.serviceWorker?.controller;
+  });
+}
+
+document.addEventListener('click', async (event) => {
+  if (!event.target.closest('[data-install]') || !installPrompt) return;
+  const prompt = installPrompt;
+  installPrompt = null;
+  await prompt.prompt();
+  syncAppStatus();
+});
 
 // ---------------------------------------------------------------------------
 // Camera / projection (stereographic, like a planetarium program)
@@ -1388,7 +1456,8 @@ function aboutHtml() {
       · Constellations: <a href="https://github.com/ofrohn/d3-celestial" target="_blank" rel="noopener">d3-celestial</a>
       · Magnetic declination: NOAA/BGS World Magnetic Model 2025
       · <a href="https://github.com/kylemcdonald/polowat-star-compass" target="_blank" rel="noopener">Source</a></p>
-    <a class="csv-link" data-csv download="polowat-star-names.csv">Download names (.csv)</a>`;
+    <a class="csv-link" data-csv download="polowat-star-names.csv">Download names (.csv)</a><button type="button" class="csv-link" data-install hidden>Install app</button>
+    <p class="hint" data-offline hidden>Saved on this device, so it works offline.</p>`;
 }
 
 function eventRow(house, star) {
@@ -1420,6 +1489,7 @@ function updateLegend() {
   legendPageEl.innerHTML = legendHtml();
   aboutPageEl.innerHTML = aboutHtml();
   linkCsv();
+  syncAppStatus();
 }
 
 // The 32 point names as a CSV: one header row, then a row per point clockwise from north.
@@ -1929,6 +1999,7 @@ try {
   initGL();
 } catch (error) {
   console.error(error);
+  registerServiceWorker();
 }
 prepareEpoch(state.t);
 setNorth(state.north);

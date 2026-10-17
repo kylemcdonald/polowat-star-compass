@@ -1,3 +1,12 @@
+/* Exo 2 (SIL Open Font License), cut down to Latin and weights 400-700 so it ships as one small file. */
+@font-face {
+  font-family: "Exo 2";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../assets/fonts/exo2.woff2") format("woff2");
+}
+
 :root {
   color-scheme: dark;
   --navy: #020934;
@@ -505,7 +514,11 @@ select {
 
 .panel-page .csv-link {
   display: inline-block;
-  margin: 8px 0 0;
+  margin: 8px 8px 0 0;
+}
+
+.panel-page button.csv-link[hidden] {
+  display: none;
 }
 
 .table-scroll {

@@ -39,6 +39,12 @@ the Polowat spellings corrected.
   on a phone the details and the panel take turns.
 - Frames are only drawn when the view or the time changes. When paused and
   idle, the page draws nothing.
+- Built for phones on slow connections: about 430 KB in all (gzipped), with a
+  45 KB Milky Way that shows up first and a sharper 290 KB one that replaces
+  it. Only large screens on a fast connection fetch the 4096 px panorama.
+- It installs as an app (Chrome on Android: menu → **Install app**, or the
+  **Install app** button under About) and works offline after the first
+  visit. See `sw.js`.
 
 Positions are J2000 values precessed to the date shown. Rising and setting
 bearings are geometric, with no refraction. Time is local `UTC+10`.
@@ -51,6 +57,12 @@ No build step. Serve the folder statically:
 python3 -m http.server 8096 --bind 0.0.0.0
 ```
 
+Offline support needs `https` or `localhost`. Once the page has been opened,
+it is served from the browser's cache. On each launch it checks the server in
+the background (at most once a minute) and stores the files that changed, so
+an edit shows up on the launch after next. List any new file the page needs in
+`ASSETS` in `sw.js`.
+
 URL parameters for sharing a view: `t` (ISO time), `yaw`, `pitch`, `fov`,
 `play`, `mirror`, `select`, `constellations`, `north=magnetic`
 (e.g. `?select=acrux&yaw=180&north=magnetic`).
@@ -62,7 +74,7 @@ URL parameters for sharing a view: `t` (ISO time), `yaw`, `pitch`, `fov`,
 - `src/brightStars.js` is the bright star list from
   [tntm](https://github.com/kylemcdonald/tntm), derived from the
   [HYG Database](https://github.com/astronexus/HYG-Database) v4.1 (CC BY-SA 4.0).
-- `assets/milkyway-4096.jpg` is downscaled from
+- `assets/milkyway-{1024,2048,4096}.webp` are downscaled from
   [NOIRLab `noirlab2430b`](https://noirlab.edu/public/images/noirlab2430b/)
   (NOIRLab/NSF/AURA/E. Slawik/M. Zamani, CC BY 4.0), a galactic coordinate
   all-sky panorama.
@@ -70,3 +82,5 @@ URL parameters for sharing a view: `t` (ISO time), `yaw`, `pitch`, `fov`,
   and names (https://github.com/ofrohn/d3-celestial, BSD-3-Clause).
 - Magnetic declination at Polowat comes from the World Magnetic Model 2025:
   +3.162° at 2025.0, changing −0.041° per year (`MAGNETIC` in `src/compass.js`).
+- `assets/fonts/exo2.woff2` is [Exo 2](https://fonts.google.com/specimen/Exo+2)
+  (SIL Open Font License 1.1), cut down to Latin and weights 400–700.
