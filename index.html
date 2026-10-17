@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Night sky over Polowat Atoll with the Weriyaeng star compass: direction stars, their diurnal paths, and their deviation from the 32 compass points."
+    />
+    <title>Polowat Star Compass</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%23020934%22/%3E%3Cpath d=%22M16 5l3 7.5 8 .6-6.1 5.2 1.9 7.8L16 21.9l-6.8 4.2 1.9-7.8L5 13.1l8-.6z%22 fill=%22%23ffe51e%22/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="sky"></canvas>
+      <canvas id="overlay"></canvas>
+
+      <header class="title-block">
+        <p class="overline">Weriyaeng star compass</p>
+        <h1>Polowat night sky</h1>
+        <p class="sub" id="location-line"></p>
+        <p class="credit">Made with the supervision of Mario Benito from Inowon in Polowat</p>
+      </header>
+
+      <div class="side-stack">
+        <button type="button" id="legend-open" class="panel help-button" aria-label="Show legend" title="Legend" hidden>?</button>
+        <section id="legend" class="panel legend-modal" role="dialog" aria-labelledby="legend-title">
+          <header>
+            <h2 id="legend-title">Star compass</h2>
+            <button type="button" id="legend-close" class="modal-close" aria-label="Close legend" title="Close (Esc)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          </header>
+          <div id="legend-body" class="legend-body"></div>
+        </section>
+        <aside id="info" class="panel info-panel" aria-live="polite" hidden></aside>
+      </div>
+
+      <div class="view-dock" role="toolbar" aria-label="View">
+        <div class="button-group" id="facing">
+          <button type="button" data-yaw="0" title="Face north (Polaris)">N</button>
+          <button type="button" data-yaw="90" class="is-active" title="Face east (Taen, rising)">E</button>
+          <button type="button" data-yaw="180" title="Face south (Crux)">S</button>
+          <button type="button" data-yaw="270" title="Face west (Tubwun, setting)">W</button>
+          <button type="button" data-zenith="shirt" title="The whole sky overhead, laid out like the shirt: east at the top, north on the left">All</button>
+        </div>
+        <div class="button-group" id="toggles">
+          <button type="button" data-toggle="paths" class="is-active" title="Diurnal paths of the compass stars">Paths</button>
+          <button type="button" data-toggle="labels" class="is-active" title="Star names">Names</button>
+          <button type="button" data-toggle="deviation" class="is-active" title="Horizon points and deviation">Δ</button>
+          <button type="button" data-toggle="milkyway" class="is-active" title="Milky Way">Milky Way</button>
+          <button type="button" data-toggle="fieldStars" class="is-active" title="Other stars">Stars</button>
+          <button type="button" data-toggle="sunMoon" class="is-active" title="Sun and Moon">Sun &amp; Moon</button>
+          <button type="button" data-toggle="constellations" title="Western constellation figures">Constellations</button>
+          <button type="button" data-toggle="grid" title="Altitude / azimuth grid">Grid</button>
+          <button type="button" data-toggle="table" title="Compass table">Table</button>
+        </div>
+        <div class="button-group" id="north" title="Count the compass points from true or magnetic north">
+          <button type="button" data-north="true" class="is-active" title="Compass points from true north">True</button>
+          <button type="button" data-north="magnetic" title="Compass points from magnetic north (WMM2025 declination)">Magnetic</button>
+        </div>
+      </div>
+
+      <nav class="time-dock" aria-label="Time">
+        <button type="button" id="play" class="icon-button" title="Play / pause (space)"></button>
+        <select id="speed" title="Simulation speed">
+          <option value="1">1×</option>
+          <option value="60">1 min/s</option>
+          <option value="300" selected>5 min/s</option>
+          <option value="1200">20 min/s</option>
+          <option value="3600">1 h/s</option>
+        </select>
+        <label class="phase-control" title="Local time of day (UTC+10). Drag past either end to keep going into the next day.">
+          <span id="time-label">Time</span>
+          <input id="time-slider" type="range" min="0" max="1440" step="1" aria-label="Local time of day" />
+        </label>
+        <label class="phase-control" title="Day of year. Drag past either end to wrap around the year.">
+          <span id="day-label">Day</span>
+          <input id="day-slider" type="range" min="1" max="365" step="1" aria-label="Day of year" />
+        </label>
+        <span id="time-readout" class="readout"></span>
+        <button type="button" id="now" title="Jump to the current time">Now</button>
+      </nav>
+
+      <section id="table" class="panel table-panel" hidden>
+        <div class="table-head">
+          <h2>Compass points at Polowat</h2>
+          <a class="csv-link" data-csv download="polowat-star-names.csv" title="The 32 point names in Polowat and Western">Download .csv</a>
+          <button type="button" id="table-close" class="icon-button" aria-label="Close table">×</button>
+        </div>
+        <div class="table-scroll"><table id="house-table"></table></div>
+        <p class="table-note" id="table-note"></p>
+      </section>
+    </div>
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>
