@@ -1,4 +1,4 @@
-# Polowat night sky
+# Polowat star compass
 
 A planetarium-style view of the night sky over Polowat Atoll (7.36° N, 149.18° E),
 facing east by default, with the Weriyaeng star compass laid over it.
@@ -31,9 +31,12 @@ the Polowat spellings corrected.
 - **Time** and **day of year** sliders work like the ones in tntm: dragging
   locks the pointer, so you can keep dragging past either end. Time carries on
   into the next or previous day; the day wraps around the year. Clicking jumps
-  to the clicked position.
-- The legend starts hidden; it opens and closes with **?** / **×**, and the page
-  remembers which you chose. Clicking a star opens its details below the legend.
+  to the clicked position. Time starts paused; ▶ plays it at 5 minutes per second.
+- Three icons at the top right open the **Legend** (what the marks mean),
+  **Settings** (view direction, layers, true / magnetic north) and **About**
+  (location, credits, names download) pages. The panel starts closed and the
+  page remembers the last one you opened. Clicking a star opens its details;
+  on a phone the details and the panel take turns.
 - Frames are only drawn when the view or the time changes. When paused and
   idle, the page draws nothing.
 
@@ -49,7 +52,7 @@ python3 -m http.server 8096 --bind 0.0.0.0
 ```
 
 URL parameters for sharing a view: `t` (ISO time), `yaw`, `pitch`, `fov`,
-`paused`, `mirror`, `select`, `constellations`, `north=magnetic`
+`play`, `mirror`, `select`, `constellations`, `north=magnetic`
 (e.g. `?select=acrux&yaw=180&north=magnetic`).
 
 ## Data

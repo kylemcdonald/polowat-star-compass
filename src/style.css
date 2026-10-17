@@ -71,36 +71,12 @@ select {
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
 }
 
-.title-block .overline {
-  margin: 0;
-  color: var(--gold);
-  font-family: var(--label-font);
-  font-weight: 600;
-  font-size: 0.85rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .title-block h1 {
   margin: 0;
   font-family: var(--label-font);
   font-weight: 600;
   font-size: 1.75rem;
   letter-spacing: 0.02em;
-}
-
-.title-block .credit {
-  margin: 4px 0 0;
-  max-width: 300px;
-  color: var(--gold);
-  font-size: 0.78rem;
-  font-style: italic;
-}
-
-.title-block .sub {
-  margin: 2px 0 0;
-  color: var(--muted);
-  font-size: 0.85rem;
 }
 
 .panel {
@@ -134,25 +110,35 @@ select {
   display: none;
 }
 
-.help-button {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+.panel-tabs {
+  display: flex;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.panel-tabs button {
   display: grid;
   place-items: center;
+  width: 40px;
+  height: 36px;
   padding: 0;
-  font-family: var(--label-font);
-  font-weight: 700;
-  font-size: 1.15rem;
-  color: var(--gold);
+  border: 0;
+  background: transparent;
+  color: var(--muted);
   cursor: pointer;
 }
 
-.help-button:hover {
+.panel-tabs button:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.panel-tabs button.is-active {
+  color: var(--gold);
   background: rgba(28, 141, 255, 0.28);
 }
 
-.legend-modal {
+.side-panel {
   width: 100%;
   min-height: 0;
   display: flex;
@@ -161,14 +147,14 @@ select {
   font-size: 0.85rem;
 }
 
-.legend-modal header {
+.side-panel header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 8px 4px 14px;
 }
 
-.legend-modal h2 {
+.side-panel h2 {
   margin: 0;
   font-family: var(--label-font);
   font-weight: 700;
@@ -178,9 +164,44 @@ select {
   color: var(--gold);
 }
 
-.legend-body {
+.panel-page {
   overflow: auto;
-  padding: 0 14px 12px;
+  padding: 0 14px 14px;
+}
+
+.panel-page h3 {
+  margin: 10px 0 6px;
+  color: #75baff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.panel-page h3:first-child {
+  margin-top: 2px;
+}
+
+.panel-page p {
+  margin: 8px 0 0;
+}
+
+.about-place {
+  font-family: var(--label-font);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.about-place span {
+  color: var(--muted);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 0.82rem;
+}
+
+.about-credit {
+  color: var(--gold);
+  font-style: italic;
 }
 
 .modal-close {
@@ -279,21 +300,21 @@ select {
   letter-spacing: 0;
 }
 
-.legend-body .legend-row {
+.panel-page .legend-row {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 4px 0;
 }
 
-.legend-body .swatch {
+.panel-page .swatch {
   width: 18px;
   height: 0;
   border-top: 2px dashed var(--blue);
   flex: none;
 }
 
-.legend-body .lang {
+.panel-page .lang {
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -302,15 +323,15 @@ select {
   margin-left: 6px;
 }
 
-.legend-body .credits {
+.panel-page .credits {
   font-size: 0.72rem;
 }
 
-.legend-body .credits a {
+.panel-page .credits a {
   color: inherit;
 }
 
-.legend-body .hint {
+.panel-page .hint {
   color: var(--muted);
   margin: 8px 0 0;
 }
@@ -324,51 +345,38 @@ select {
   color: var(--neg);
 }
 
-.view-dock {
-  position: absolute;
-  left: 50%;
-  top: 16px;
-  z-index: 6;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-  max-width: calc(100% - 24px);
-}
-
 .button-group {
   display: flex;
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  border-radius: 9px;
-  overflow: hidden;
-  backdrop-filter: blur(8px);
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .button-group button {
+  flex: 1 1 auto;
   white-space: nowrap;
-  border: 0;
-  background: transparent;
-  padding: 6px 11px;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 10px;
   font-size: 0.82rem;
   cursor: pointer;
   color: var(--muted);
-  border-right: 1px solid rgba(120, 170, 255, 0.12);
-}
-
-.button-group button:last-child {
-  border-right: 0;
 }
 
 .button-group button:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .button-group button.is-active {
   color: var(--text);
+  border-color: rgba(28, 141, 255, 0.6);
   background: rgba(28, 141, 255, 0.28);
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .time-dock {
@@ -388,7 +396,6 @@ select {
   backdrop-filter: blur(8px);
 }
 
-.time-dock select,
 .time-dock button {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--panel-border);
@@ -396,10 +403,6 @@ select {
   padding: 4px 8px;
   font-size: 0.82rem;
   cursor: pointer;
-}
-
-.time-dock select option {
-  background: #07123f;
 }
 
 .phase-control {
@@ -500,7 +503,7 @@ select {
   background: rgba(28, 141, 255, 0.28);
 }
 
-.legend-body .csv-link {
+.panel-page .csv-link {
   display: inline-block;
   margin: 8px 0 0;
 }
@@ -568,75 +571,61 @@ select {
 }
 
 @media (max-width: 760px) {
+  /* Phones: tabs stay top right, open panels sit just above the time bar. */
   .side-stack {
-    top: 14px;
+    top: 12px;
     right: 12px;
     left: 12px;
+    bottom: 128px;
     width: auto;
-    bottom: 160px;
     max-height: none;
-    justify-content: flex-end;
   }
 
-  .help-button {
-    position: absolute;
-    top: 0;
-    right: 0;
-  }
-
-  .legend-modal,
+  .side-panel,
   .info-panel {
-    max-height: 45%;
+    margin-top: auto;
+    max-height: 60%;
   }
 
-  /* One panel at a time on a phone: star details replace the legend. */
-  .side-stack.has-selection .legend-modal {
-    display: none;
+  .side-panel + .info-panel {
+    margin-top: 0;
+  }
+
+  .title-block {
+    top: 14px;
+    left: 14px;
   }
 
   .title-block h1 {
     font-size: 1.3rem;
   }
 
-  .title-block .credit {
-    max-width: 290px;
-  }
-
-  .view-dock {
-    top: 132px;
-    gap: 6px;
-  }
-
-  .button-group {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .button-group button {
-    flex: 1 0 auto;
-    padding: 6px 8px;
-  }
-
   .time-dock {
+    bottom: 10px;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 6px 10px;
+    width: calc(100% - 20px);
   }
 
   .phase-control {
-    flex: 1 1 130px;
+    flex: 1 1 110px;
   }
 
   .readout {
     order: 10;
-    flex: 1 0 100%;
+    flex: 1 1 auto;
     width: auto;
     text-align: left;
+  }
+
+  #now {
+    order: 11;
   }
 
   .table-panel {
     left: 12px;
     width: calc(100% - 24px);
-    top: 80px;
-    bottom: 150px;
+    top: 60px;
+    bottom: 128px;
   }
 }

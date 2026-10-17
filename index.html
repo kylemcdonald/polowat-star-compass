@@ -23,58 +23,55 @@
       <canvas id="overlay"></canvas>
 
       <header class="title-block">
-        <p class="overline">Weriyaeng star compass</p>
         <h1>Polowat night sky</h1>
-        <p class="sub" id="location-line"></p>
-        <p class="credit">Made with the supervision of Mario Benito from Inowon in Polowat</p>
       </header>
 
       <div class="side-stack">
-        <button type="button" id="legend-open" class="panel help-button" aria-label="Show legend" title="Legend" hidden>?</button>
-        <section id="legend" class="panel legend-modal" role="dialog" aria-labelledby="legend-title">
+        <nav class="panel panel-tabs" aria-label="Panels">
+          <button type="button" data-tab="legend" aria-label="Legend" title="Legend"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h.01M3 12h.01M3 18h.01M8 6h13M8 12h13M8 18h13"/></svg></button>
+          <button type="button" data-tab="settings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg></button>
+          <button type="button" data-tab="about" aria-label="About" title="About"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></button>
+        </nav>
+        <section id="side-panel" class="panel side-panel" role="dialog" aria-labelledby="panel-title" hidden>
           <header>
-            <h2 id="legend-title">Star compass</h2>
-            <button type="button" id="legend-close" class="modal-close" aria-label="Close legend" title="Close (Esc)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            <h2 id="panel-title">Legend</h2>
+            <button type="button" id="panel-close" class="modal-close" aria-label="Close panel" title="Close (Esc)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
           </header>
-          <div id="legend-body" class="legend-body"></div>
+          <div class="panel-page" data-page="legend" id="legend-page"></div>
+          <div class="panel-page" data-page="settings" hidden>
+            <h3>View</h3>
+            <div class="button-group" id="facing">
+              <button type="button" data-yaw="0" title="Face north (Polaris)">N</button>
+              <button type="button" data-yaw="90" class="is-active" title="Face east (Tan, rising)">E</button>
+              <button type="button" data-yaw="180" title="Face south (Crux)">S</button>
+              <button type="button" data-yaw="270" title="Face west (Tolon, setting)">W</button>
+              <button type="button" data-zenith="shirt" title="The whole sky overhead, laid out like the shirt: east at the top, north on the left">All</button>
+            </div>
+            <h3>Show</h3>
+            <div class="button-group button-grid" id="toggles">
+              <button type="button" data-toggle="paths" class="is-active" title="Diurnal paths of the compass stars">Paths</button>
+              <button type="button" data-toggle="labels" class="is-active" title="Star names">Names</button>
+              <button type="button" data-toggle="deviation" class="is-active" title="Horizon points and deviation">Δ</button>
+              <button type="button" data-toggle="milkyway" class="is-active" title="Milky Way">Milky Way</button>
+              <button type="button" data-toggle="fieldStars" class="is-active" title="Other stars">Stars</button>
+              <button type="button" data-toggle="sunMoon" class="is-active" title="Sun and Moon">Sun &amp; Moon</button>
+              <button type="button" data-toggle="constellations" title="Western constellation figures">Constellations</button>
+              <button type="button" data-toggle="grid" title="Altitude / azimuth grid">Grid</button>
+              <button type="button" data-toggle="table" title="Compass table">Table</button>
+            </div>
+            <h3>North</h3>
+            <div class="button-group" id="north" title="Count the compass points from true or magnetic north">
+              <button type="button" data-north="true" class="is-active" title="Compass points from true north">True</button>
+              <button type="button" data-north="magnetic" title="Compass points from magnetic north (WMM2025 declination)">Magnetic</button>
+            </div>
+          </div>
+          <div class="panel-page" data-page="about" id="about-page" hidden></div>
         </section>
         <aside id="info" class="panel info-panel" aria-live="polite" hidden></aside>
       </div>
 
-      <div class="view-dock" role="toolbar" aria-label="View">
-        <div class="button-group" id="facing">
-          <button type="button" data-yaw="0" title="Face north (Polaris)">N</button>
-          <button type="button" data-yaw="90" class="is-active" title="Face east (Tan, rising)">E</button>
-          <button type="button" data-yaw="180" title="Face south (Crux)">S</button>
-          <button type="button" data-yaw="270" title="Face west (Tolon, setting)">W</button>
-          <button type="button" data-zenith="shirt" title="The whole sky overhead, laid out like the shirt: east at the top, north on the left">All</button>
-        </div>
-        <div class="button-group" id="toggles">
-          <button type="button" data-toggle="paths" class="is-active" title="Diurnal paths of the compass stars">Paths</button>
-          <button type="button" data-toggle="labels" class="is-active" title="Star names">Names</button>
-          <button type="button" data-toggle="deviation" class="is-active" title="Horizon points and deviation">Δ</button>
-          <button type="button" data-toggle="milkyway" class="is-active" title="Milky Way">Milky Way</button>
-          <button type="button" data-toggle="fieldStars" class="is-active" title="Other stars">Stars</button>
-          <button type="button" data-toggle="sunMoon" class="is-active" title="Sun and Moon">Sun &amp; Moon</button>
-          <button type="button" data-toggle="constellations" title="Western constellation figures">Constellations</button>
-          <button type="button" data-toggle="grid" title="Altitude / azimuth grid">Grid</button>
-          <button type="button" data-toggle="table" title="Compass table">Table</button>
-        </div>
-        <div class="button-group" id="north" title="Count the compass points from true or magnetic north">
-          <button type="button" data-north="true" class="is-active" title="Compass points from true north">True</button>
-          <button type="button" data-north="magnetic" title="Compass points from magnetic north (WMM2025 declination)">Magnetic</button>
-        </div>
-      </div>
-
       <nav class="time-dock" aria-label="Time">
-        <button type="button" id="play" class="icon-button" title="Play / pause (space)"></button>
-        <select id="speed" title="Simulation speed">
-          <option value="1">1×</option>
-          <option value="60">1 min/s</option>
-          <option value="300" selected>5 min/s</option>
-          <option value="1200">20 min/s</option>
-          <option value="3600">1 h/s</option>
-        </select>
+        <button type="button" id="play" class="icon-button" title="Play / pause at 5 min/s (space)"></button>
         <label class="phase-control" title="Local time of day (UTC+10). Drag past either end to keep going into the next day.">
           <span id="time-label">Time</span>
           <input id="time-slider" type="range" min="0" max="1440" step="1" aria-label="Local time of day" />

@@ -40,8 +40,8 @@ const CARDINALS = [
 
 const state = {
   t: defaultTime(),
-  playing: true,
-  speed: 300,
+  playing: false,
+  speed: 300, // 5 minutes of sky per second while playing
   yaw: 90,
   pitch: null,
   fov: DEFAULT_FOV,
@@ -57,7 +57,7 @@ const state = {
     table: false,
   },
   north: 'true',
-  legendOpen: true,
+  panel: null,
   selected: null,
   hover: null,
   viewTween: null,
@@ -754,7 +754,7 @@ function drawCompassStars() {
   });
 }
 
-const uiBlocks = ['.title-block', '#info', '#legend', '#legend-open', '.view-dock', '.time-dock', '#table'].map((sel) => document.querySelector(sel));
+const uiBlocks = ['.title-block', '#info', '#side-panel', '.panel-tabs', '.time-dock', '#table'].map((sel) => document.querySelector(sel));
 
 function uiRects() {
   return uiBlocks
@@ -1277,19 +1277,18 @@ const infoEl = document.getElementById('info');
 const tableEl = document.getElementById('table');
 const tableBody = document.getElementById('house-table');
 const playBtn = document.getElementById('play');
-const speedEl = document.getElementById('speed');
 const timeEl = document.getElementById('time-slider');
 const dayEl = document.getElementById('day-slider');
 const timeLabelEl = document.getElementById('time-label');
 const dayLabelEl = document.getElementById('day-label');
 const readoutEl = document.getElementById('time-readout');
 const sideStackEl = document.querySelector('.side-stack');
-const legendEl = document.getElementById('legend');
-const legendBodyEl = document.getElementById('legend-body');
-const legendOpenBtn = document.getElementById('legend-open');
+const sidePanelEl = document.getElementById('side-panel');
+const panelTitleEl = document.getElementById('panel-title');
+const legendPageEl = document.getElementById('legend-page');
+const aboutPageEl = document.getElementById('about-page');
 const X_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 
-document.getElementById('location-line').textContent = `${LOCATION.name} · ${LAT.toFixed(2)}° N, ${LON.toFixed(2)}° E`;
 const tableNoteEl = document.getElementById('table-note');
 
 function tableNote() {
@@ -1362,6 +1361,8 @@ function nextEventTime(raDateHours, haDeg) {
   return state.t + (deg / 360.98564736629) * 86400000;
 }
 
+// Side panel pages. Legend: what the marks mean. Settings: static buttons in index.html.
+// About: place, people, sources and the names download.
 function legendHtml() {
   return `<div class="legend-row"><span style="color:var(--gold);font-family:var(--label-font);font-weight:700">MAILAP</span><span class="lang">${LANGUAGES.polowat}</span></div>
     <div class="legend-row"><span style="color:#9fb8e8;font-size:0.8rem">ALTAIR</span><span class="lang">${LANGUAGES.western}</span></div>
@@ -1372,13 +1373,22 @@ function legendHtml() {
     <div class="legend-row"><span style="color:#fff">N</span><span>${state.north === 'magnetic'
     ? `Points counted from magnetic north, ${fmtDelta(epoch.declination)} east of true (${MAGNETIC.model})`
     : 'Points counted from true north'}</span></div>
-    <a class="csv-link" data-csv download="polowat-star-names.csv">Download names (.csv)</a>
-    <p class="hint">Drag to look around, scroll or pinch to zoom, click a star or a horizon label for details. Space plays / pauses.</p>
-    <p class="hint">Made with the supervision of Mario Benito from Inowon in Polowat.</p>
+    <p class="hint">Drag to look around, scroll or pinch to zoom, click a star or a horizon label for details.
+      ▶ plays time at 5 minutes per second; space also plays / pauses.</p>`;
+}
+
+function aboutHtml() {
+  return `<p class="about-place">${LOCATION.name}<br><span>${LAT.toFixed(2)}° N, ${LON.toFixed(2)}° E · ${LOCATION.zoneName}</span></p>
+    <p class="about-credit">Made with the supervision of Mario Benito from Inowon in Polowat.</p>
+    <p>The 32 points of the Weriyaeng star compass, with the stars that rise and set on them.
+      Rising points are <em>Tan</em>, setting points <em>Tolon</em>.</p>
+    <p class="hint">Magnetic declination at Polowat: ${fmtDelta(epoch.declination)} (east), ${MAGNETIC.model}.</p>
     <p class="hint credits">Milky Way: <a href="https://noirlab.edu/public/images/noirlab2430b/" target="_blank" rel="noopener">NOIRLab/NSF/AURA/E.&nbsp;Slawik/M.&nbsp;Zamani</a>
       (CC&nbsp;BY&nbsp;4.0) · Stars: <a href="https://github.com/astronexus/HYG-Database" target="_blank" rel="noopener">HYG Database</a>
       · Constellations: <a href="https://github.com/ofrohn/d3-celestial" target="_blank" rel="noopener">d3-celestial</a>
-      · Magnetic declination: NOAA/BGS World Magnetic Model 2025</p>`;
+      · Magnetic declination: NOAA/BGS World Magnetic Model 2025
+      · <a href="https://github.com/kylemcdonald/polowat-star-compass" target="_blank" rel="noopener">Source</a></p>
+    <a class="csv-link" data-csv download="polowat-star-names.csv">Download names (.csv)</a>`;
 }
 
 function eventRow(house, star) {
@@ -1407,7 +1417,8 @@ function updateLegend() {
   const key = `${state.north}|${epoch.declination.toFixed(2)}`;
   if (key === lastLegendKey) return;
   lastLegendKey = key;
-  legendBodyEl.innerHTML = legendHtml();
+  legendPageEl.innerHTML = legendHtml();
+  aboutPageEl.innerHTML = aboutHtml();
   linkCsv();
 }
 
@@ -1426,20 +1437,37 @@ function linkCsv() {
   });
 }
 
-function setLegendOpen(open, remember = true) {
-  state.legendOpen = open;
-  legendEl.hidden = !open;
-  legendOpenBtn.hidden = open;
+const PANEL_TITLES = { legend: 'Legend', settings: 'Settings', about: 'About' };
+const narrowScreen = () => W < 760;
+
+// Open one page of the side panel, or close it with null.
+function setPanel(tab, remember = true) {
+  state.panel = PANEL_TITLES[tab] ? tab : null;
+  sidePanelEl.hidden = !state.panel;
+  if (state.panel) {
+    panelTitleEl.textContent = PANEL_TITLES[state.panel];
+    sidePanelEl.querySelectorAll('.panel-page').forEach((page) => {
+      page.hidden = page.dataset.page !== state.panel;
+    });
+    // A phone only has room for one panel: the page replaces any star details.
+    if (narrowScreen() && state.selected) select(null);
+  }
+  document.querySelectorAll('.panel-tabs button').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.tab === state.panel);
+    btn.setAttribute('aria-pressed', String(btn.dataset.tab === state.panel));
+  });
   if (!remember) return;
   try {
-    localStorage.setItem('polowat.legend', open ? 'open' : 'closed');
+    localStorage.setItem('polowat.panel', state.panel ?? 'closed');
   } catch {
     // Remembering the choice is optional.
   }
 }
 
-legendOpenBtn.addEventListener('click', () => setLegendOpen(true));
-document.getElementById('legend-close').addEventListener('click', () => setLegendOpen(false));
+document.querySelectorAll('.panel-tabs button').forEach((btn) => {
+  btn.addEventListener('click', () => setPanel(state.panel === btn.dataset.tab ? null : btn.dataset.tab));
+});
+document.getElementById('panel-close').addEventListener('click', () => setPanel(null));
 
 function updateInfo(force = false) {
   updateLegend();
@@ -1475,6 +1503,7 @@ function updateInfo(force = false) {
 
 function select(id) {
   state.selected = id;
+  if (id && narrowScreen() && state.panel) setPanel(null, false);
   updateInfo(true);
   highlightTable();
 }
@@ -1519,10 +1548,6 @@ function updateTimeUI() {
 
 playBtn.addEventListener('click', () => {
   state.playing = !state.playing;
-});
-
-speedEl.addEventListener('change', () => {
-  state.speed = Number(speedEl.value);
 });
 
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
@@ -1614,8 +1639,6 @@ loopingRange(dayEl, {
 
 document.getElementById('now').addEventListener('click', () => {
   state.t = Date.now();
-  state.speed = 1;
-  speedEl.value = '1';
 });
 
 document.querySelectorAll('#facing button').forEach((btn) => {
@@ -1809,7 +1832,7 @@ window.addEventListener('keydown', (event) => {
     state.pitch = Math.max(-35, state.pitch - 5);
   } else if (event.key === 'Escape') {
     if (state.selected) select(null);
-    else if (state.legendOpen) setLegendOpen(false);
+    else if (state.panel) setPanel(null);
   }
 });
 
@@ -1845,7 +1868,7 @@ function renderKey() {
   const quantum = Math.max(1, 0.2 / pxPerMs);
   return [
     Math.floor(state.t / quantum), state.yaw, state.pitch, state.fov, state.mirror, W, H, dpr,
-    state.north, state.selected, state.hover, state.legendOpen, milkyReady, fontsReady,
+    state.north, state.selected, state.hover, state.panel, milkyReady, fontsReady,
     JSON.stringify(state.show),
   ].join('|');
 }
@@ -1891,7 +1914,7 @@ if (params.has('t')) state.t = Date.parse(params.get('t')) || state.t;
 if (params.has('yaw')) state.yaw = Number(params.get('yaw'));
 if (params.has('pitch')) state.pitch = Number(params.get('pitch'));
 if (params.has('fov')) state.fov = Number(params.get('fov'));
-if (params.has('paused')) state.playing = false;
+if (params.has('play')) state.playing = true;
 if (params.has('select')) state.selected = params.get('select');
 if (params.has('mirror')) state.mirror = true;
 if (params.has('constellations')) state.show.constellations = true;
@@ -1909,15 +1932,14 @@ try {
 }
 prepareEpoch(state.t);
 setNorth(state.north);
-speedEl.value = String(state.speed);
-let storedLegend = null;
+let storedPanel = null;
 try {
-  storedLegend = localStorage.getItem('polowat.legend');
+  storedPanel = localStorage.getItem('polowat.panel');
 } catch {
-  storedLegend = null;
+  storedPanel = null;
 }
-// Hidden until asked for with the ? button; after that the last choice is remembered.
-setLegendOpen(storedLegend === 'open', false);
+// Closed until one of the icons is clicked; after that the last choice is remembered.
+setPanel(narrowScreen() ? null : storedPanel, false);
 document.fonts?.ready?.then(() => {
   fontsReady = true;
   updateInfo(true);
