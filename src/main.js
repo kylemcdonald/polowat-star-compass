@@ -56,7 +56,7 @@ const state = {
     sunMoon: true,
     table: false,
   },
-  north: 'true',
+  reference: 'true', // what the 32 points are lined up on: 'true' | 'magnetic' | 'mailap'
   panel: null,
   selected: null,
   hover: null,
@@ -105,9 +105,16 @@ const constellationVectors = CONSTELLATIONS.map((c) => ({
 const figureVectors = Object.fromEntries(
   Object.entries(FIGURES).map(([key, figure]) => [
     key,
-    { ...figure, vectors: figure.stars.map((s) => ({ ...s, v: A.radecToVector(s.ra, s.dec) })) },
+    {
+      ...figure,
+      vectors: figure.stars.map((s) => ({ ...s, v: A.radecToVector(s.ra, s.dec) })),
+      // Long lines (Mannap's wings span tens of degrees) have to bend with the projection.
+      segments: figure.lines.map((pair) => densify(pair.map((i) => [figure.stars[i].ra, figure.stars[i].dec]))),
+    },
   ]),
 );
+// Named figures that are not compass stars (Mannap) can be clicked like a star.
+const namedFigureIds = Object.keys(FIGURES).filter((key) => FIGURES[key].name);
 
 let epoch = null;
 
@@ -184,16 +191,35 @@ function prepareEpoch(t) {
   applyReference();
 }
 
+// What the compass can be lined up on. True and magnetic set its north; Mailap turns the whole
+// compass so its east point, Tan Mailap, sits where Altair rises.
+const REFERENCES = {
+  true: { bearing: 'true', marker: '' },
+  magnetic: { bearing: 'mag', marker: 'MAGNETIC' },
+  mailap: { bearing: 'Mailap', marker: 'MAILAP' },
+};
+
 // Degrees from true north to the north the compass points are counted from.
 function northOffset() {
-  return state.north === 'magnetic' ? epoch.declination : 0;
+  if (state.reference === 'magnetic') return epoch.declination;
+  if (state.reference === 'mailap') return epoch.stars.altair.rs.riseAz - 90;
+  return 0;
+}
+
+function referenceText() {
+  if (state.reference === 'magnetic') return `magnetic north (declination ${fmtDelta(epoch.declination)} east of true, ${MAGNETIC.model})`;
+  if (state.reference === 'mailap') {
+    const off = northOffset();
+    return `Mailap north (${Math.abs(off).toFixed(1)}° ${off < 0 ? 'west' : 'east'} of true): the compass turned so its east point, Tan Mailap, is where Altair rises`;
+  }
+  return 'true north';
 }
 
 function toBearing(az) {
   return (((az - northOffset()) % 360) + 360) % 360;
 }
 
-// Place the 32 points relative to true or magnetic north and recompute each deviation.
+// Place the 32 points on the chosen reference and recompute each deviation.
 function applyReference() {
   const off = northOffset();
   epoch.houses.forEach((h) => {
@@ -726,30 +752,29 @@ function drawFieldStars() {
   ctx.globalAlpha = 1;
 }
 
+function figureStarRadius(mag) {
+  return (5 + Math.max(0, 2.6 - Math.max(mag, -0.5)) * 2.4) * starZoomScale();
+}
+
 function drawFigures() {
-  Object.values(figureVectors).forEach((figure) => {
+  const maxJump = Math.max(W, H) * 0.5;
+  Object.entries(figureVectors).forEach(([key, figure]) => {
+    const active = state.selected === key || state.hover === key;
     const pts = figure.vectors.map((s) => {
       const v = A.apply(frame.M, s.v);
       return { v, p: project(v) };
     });
-    ctx.strokeStyle = 'rgba(200, 190, 60, 0.55)';
-    ctx.lineWidth = 1.4;
-    figure.lines.forEach(([a, b]) => {
-      const pa = pts[a].p;
-      const pb = pts[b].p;
-      if (!pa || !pb || Math.hypot(pa.x - pb.x, pa.y - pb.y) > W) return;
+    ctx.strokeStyle = active ? LABEL_GOLD : 'rgba(200, 190, 60, 0.55)';
+    ctx.lineWidth = active ? 2 : 1.4;
+    figure.lines.forEach(([a, b], i) => {
       ctx.globalAlpha = pts[a].v[2] < 0 && pts[b].v[2] < 0 ? 0.3 : 1;
-      ctx.beginPath();
-      ctx.moveTo(pa.x, pa.y);
-      ctx.lineTo(pb.x, pb.y);
-      ctx.stroke();
+      strokePolyline(figure.segments[i].map((v) => A.apply(frame.M, v)), maxJump);
     });
     ctx.globalAlpha = 1;
-    if (figure === figureVectors.crux || figure === figureVectors.belt) {
+    if (figure === figureVectors.crux || figure === figureVectors.belt || figure.name) {
       pts.forEach(({ v, p }, i) => {
         if (!onScreen(p)) return;
-        const mag = figure.vectors[i].mag;
-        const r = (5 + Math.max(0, 2.6 - mag) * 2.4) * starZoomScale();
+        const r = figureStarRadius(figure.vectors[i].mag);
         ctx.globalAlpha = v[2] < 0 ? 0.35 : 0.95;
         ctx.fillStyle = STAR_GOLD;
         starPath(p.x, p.y, r, r * 0.42);
@@ -820,6 +845,19 @@ function drawCompassStars() {
     }
     starScreen.push({ id, p, r, v, below, mag: star.mag });
   });
+  // A named figure is labelled (and clicked) at its head star, or its first star on screen.
+  namedFigureIds.forEach((id) => {
+    const anchor = figureVectors[id].vectors
+      .map((s) => {
+        const v = A.apply(frame.M, s.v);
+        return { v, p: project(v), mag: s.mag };
+      })
+      .find(({ p }) => onScreen(p));
+    if (!anchor) return;
+    const { v, p } = anchor;
+    // Named after the compass stars when labels compete for room.
+    starScreen.push({ id, p, r: figureStarRadius(anchor.mag), v, below: v[2] < 0, mag: 9, figure: FIGURES[id] });
+  });
 }
 
 const uiBlocks = ['#info', '#side-panel', '.panel-tabs', '.time-dock', '#table'].map((sel) => document.querySelector(sel));
@@ -847,11 +885,13 @@ function drawStarLabels() {
   });
 
   order.forEach((s) => {
-    const house = compassStarLabelHouse(s.id);
+    const house = s.figure ? null : compassStarLabelHouse(s.id);
     // Crux is named for where it is in its turn; other stars carry their own name.
-    const lines = s.id === 'acrux'
-      ? nameLines(house.polowat, `Crux · ${house.western}`, scale)
-      : nameLines(STARS[s.id].polowat, house.western, scale);
+    const lines = s.figure
+      ? nameLines(s.figure.name.polowat, s.figure.name.western, scale)
+      : s.id === 'acrux'
+        ? nameLines(house.polowat, `Crux · ${house.western}`, scale)
+        : nameLines(STARS[s.id].polowat, house.western, scale);
     const size = measureLines(lines);
     const gap = s.r + 6;
     const candidates = [
@@ -1104,7 +1144,7 @@ function drawCardinals() {
     const heading = nominal === 90 ? HEADINGS.rising : nominal === 270 ? HEADINGS.setting : null;
     const stack = [];
     if (off && nominal === 0) {
-      stack.push({ text: 'MAGNETIC', weight: 600, size: 10.5, color: '#9fb8e8' });
+      stack.push({ text: REFERENCES[state.reference].marker, weight: 600, size: 10.5, color: '#9fb8e8' });
     }
     if (heading) {
       stack.push({ text: heading.western.toUpperCase(), weight: 500, size: 10.5, color: '#9fb8e8' });
@@ -1125,7 +1165,7 @@ function drawCardinals() {
   });
 }
 
-// Small marker for true north while the compass is counted from magnetic north.
+// Small marker for true north while the compass is counted from magnetic north or Mailap.
 // It rises above the magnetic N label so the two never sit side by side.
 function drawTrueNorth(reach) {
   const a = project(A.azAltToVector(0, 0));
@@ -1360,10 +1400,7 @@ const X_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stro
 const tableNoteEl = document.getElementById('table-note');
 
 function tableNote() {
-  const north = state.north === 'magnetic'
-    ? `magnetic north (declination ${fmtDelta(epoch.declination)} east of true, ${MAGNETIC.model})`
-    : 'true north';
-  tableNoteEl.innerHTML = `Bearings are degrees clockwise from ${north}. Δ = where the star actually rises, sets or stands
+  tableNoteEl.innerHTML = `Bearings are degrees clockwise from ${referenceText()}. Δ = where the star actually rises, sets or stands
   minus the ideal point (360°/32 = 11.25° apart); <span class="pos">+</span> is clockwise, <span class="neg">−</span> counter‑clockwise.
   Geometric horizon, no refraction.`;
 }
@@ -1396,7 +1433,7 @@ function buildTable() {
     </tr>`;
   });
   tableBody.innerHTML = `<thead><tr><th>Point</th><th></th><th>${LANGUAGES.polowat}</th>
-    <th>${LANGUAGES.western}</th><th>Star</th><th>Bearing ${state.north === 'magnetic' ? '(mag)' : '(true)'}</th><th>Δ</th></tr></thead><tbody>${rows.join('')}</tbody>`;
+    <th>${LANGUAGES.western}</th><th>Star</th><th>Bearing (${REFERENCES[state.reference].bearing})</th><th>Δ</th></tr></thead><tbody>${rows.join('')}</tbody>`;
   tableNote();
   tableBody.querySelectorAll('tr[data-k]').forEach((tr) => {
     tr.addEventListener('click', () => {
@@ -1438,9 +1475,7 @@ function legendHtml() {
     <div class="legend-row"><span style="color:#fff">┃</span><span>Ideal compass point, every 11.25°</span></div>
     <div class="legend-row"><span style="color:var(--star-gold)">◆</span><span>Where the star actually rises / sets</span></div>
     <div class="legend-row"><span><span class="pos">+Δ</span> / <span class="neg">−Δ</span></span><span>clockwise / counter‑clockwise of the point</span></div>
-    <div class="legend-row"><span style="color:#fff">N</span><span>${state.north === 'magnetic'
-    ? `Points counted from magnetic north, ${fmtDelta(epoch.declination)} east of true (${MAGNETIC.model})`
-    : 'Points counted from true north'}</span></div>
+    <div class="legend-row"><span style="color:#fff">N</span><span>Points counted from ${referenceText()}</span></div>
     <p class="hint">Drag to look around, scroll or pinch to zoom, click a star or a horizon label for details.
       ▶ plays time at 5 minutes per second; space also plays / pauses.</p>`;
 }
@@ -1465,7 +1500,7 @@ function eventRow(house, star) {
   let detail;
   if (house.event === 'pole') {
     detail = `<dl><dt>Point</dt><dd>${house.nominal.toFixed(2)}° (${cardinalFor(house.nominal)})</dd>
-      <dt>Swing</dt><dd>±${house.amplitude.toFixed(2)}° about true north${northOffset() ? ` (${toBearing(0).toFixed(1)}° magnetic)` : ''}, never sets</dd>
+      <dt>Swing</dt><dd>±${house.amplitude.toFixed(2)}° about true north${northOffset() ? ` (${toBearing(0).toFixed(1)}° ${REFERENCES[state.reference].bearing})` : ''}, never sets</dd>
       <dt>Now</dt><dd>${deltaHtml(house.liveDelta ?? 0)}</dd></dl>`;
   } else {
     const when = fmtLocalTime(nextEventTime(star.raDate, house.ha));
@@ -1483,7 +1518,7 @@ let lastInfoKey = '';
 let lastLegendKey = '';
 
 function updateLegend() {
-  const key = `${state.north}|${epoch.declination.toFixed(2)}`;
+  const key = `${state.reference}|${epoch.declination.toFixed(2)}|${northOffset().toFixed(2)}`;
   if (key === lastLegendKey) return;
   lastLegendKey = key;
   legendPageEl.innerHTML = legendHtml();
@@ -1543,7 +1578,7 @@ function updateInfo(force = false) {
   updateLegend();
   if (!frame) return;
   const id = state.selected;
-  const key = `${id}|${Math.floor(state.t / 60000)}|${epoch.t}|${state.north}`;
+  const key = `${id}|${Math.floor(state.t / 60000)}|${epoch.t}|${state.reference}`;
   if (!force && key === lastInfoKey) return;
   lastInfoKey = key;
   sideStackEl.classList.toggle('has-selection', Boolean(id));
@@ -1553,6 +1588,10 @@ function updateInfo(force = false) {
     return;
   }
   infoEl.hidden = false;
+  if (FIGURES[id]?.name) {
+    figureInfo(id);
+    return;
+  }
   const star = epoch.stars[id];
   const houses = epoch.houses.filter((h) => h.star === id);
   const first = houses[0];
@@ -1565,9 +1604,31 @@ function updateInfo(force = false) {
     <div class="western">${crux ? 'Southern Cross · Acrux (α Cru)' : `${esc(first.western)}${first.western === star.name ? '' : ` · ${esc(star.name)}`} (${esc(star.designation)})`}</div>
     <dl>
       <dt>Dec (of date)</dt><dd>${star.decDate >= 0 ? '+' : '−'}${Math.abs(star.decDate).toFixed(2)}°</dd>
-      <dt>Now</dt><dd>${state.north === 'magnetic' ? 'bearing (mag)' : 'az'} ${toBearing(now.az).toFixed(1)}°, alt ${now.alt.toFixed(1)}°${now.alt < 0 ? ' (below horizon)' : ''}</dd>
+      <dt>Now</dt><dd>${northOffset() ? `bearing (${REFERENCES[state.reference].bearing})` : 'az'} ${toBearing(now.az).toFixed(1)}°, alt ${now.alt.toFixed(1)}°${now.alt < 0 ? ' (below horizon)' : ''}</dd>
     </dl>
     ${houses.map((h) => eventRow(h, star)).join('')}`;
+  document.getElementById('clear-selection').addEventListener('click', () => select(null));
+}
+
+// Details for a named figure (Mannap): what it is, and where its head star is and rises.
+function figureInfo(id) {
+  const figure = figureVectors[id];
+  const head = figure.vectors[0];
+  const ofDate = A.vectorToRadec(A.apply(epoch.P, head.v));
+  const rs = A.riseSet(ofDate.dec, LAT);
+  const now = A.vectorToAzAlt(A.apply(frame.M, head.v));
+  const bearing = northOffset() ? `bearing (${REFERENCES[state.reference].bearing})` : 'az';
+  const names = figure.stars.map((s) => s.id[0].toUpperCase() + s.id.slice(1)).join(', ');
+  infoEl.innerHTML = `
+    <button type="button" class="modal-close info-close" id="clear-selection" aria-label="Close details" title="Close (Esc)">${X_ICON}</button>
+    <h2>${esc(figure.name.polowat)}</h2>
+    <div class="western">${esc(names)}</div>
+    <p>${esc(figure.about)}</p>
+    <dl>
+      <dt>Head</dt><dd>${esc(names.split(', ')[0])}, dec ${ofDate.dec >= 0 ? '+' : '−'}${Math.abs(ofDate.dec).toFixed(2)}°</dd>
+      <dt>Rises</dt><dd>${toBearing(rs.riseAz).toFixed(1)}° (${cardinalFor(toBearing(rs.riseAz))}) · next ${fmtLocalTime(nextEventTime(ofDate.ra, rs.riseHA))} local</dd>
+      <dt>Now</dt><dd>${bearing} ${toBearing(now.az).toFixed(1)}°, alt ${now.alt.toFixed(1)}°${now.alt < 0 ? ' (below horizon)' : ''}</dd>
+    </dl>`;
   document.getElementById('clear-selection').addEventListener('click', () => select(null));
 }
 
@@ -1744,17 +1805,17 @@ document.querySelectorAll('#toggles button').forEach((btn) => {
   });
 });
 
-function setNorth(north) {
-  state.north = north === 'magnetic' ? 'magnetic' : 'true';
-  document.querySelectorAll('#north button').forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.north === state.north);
+function setReference(reference) {
+  state.reference = Object.hasOwn(REFERENCES, reference) ? reference : 'true';
+  document.querySelectorAll('#reference button').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.reference === state.reference);
   });
   applyReference();
   updateInfo(true);
 }
 
-document.querySelectorAll('#north button').forEach((btn) => {
-  btn.addEventListener('click', () => setNorth(btn.dataset.north));
+document.querySelectorAll('#reference button').forEach((btn) => {
+  btn.addEventListener('click', () => setReference(btn.dataset.reference));
 });
 
 document.getElementById('table-close').addEventListener('click', () => {
@@ -1938,7 +1999,7 @@ function renderKey() {
   const quantum = Math.max(1, 0.2 / pxPerMs);
   return [
     Math.floor(state.t / quantum), state.yaw, state.pitch, state.fov, state.mirror, W, H, dpr,
-    state.north, state.selected, state.hover, state.panel, milkyReady, fontsReady,
+    state.reference, state.selected, state.hover, state.panel, milkyReady, fontsReady,
     JSON.stringify(state.show),
   ].join('|');
 }
@@ -1988,7 +2049,8 @@ if (params.has('play')) state.playing = true;
 if (params.has('select')) state.selected = params.get('select');
 if (params.has('mirror')) state.mirror = true;
 if (params.has('constellations')) state.show.constellations = true;
-if (params.get('north') === 'magnetic') state.north = 'magnetic';
+if (params.has('reference')) state.reference = params.get('reference');
+else if (params.get('north') === 'magnetic') state.reference = 'magnetic';
 document.querySelectorAll('#toggles button').forEach((btn) => {
   btn.classList.toggle('is-active', Boolean(state.show[btn.dataset.toggle]));
 });
@@ -2002,7 +2064,7 @@ try {
   registerServiceWorker();
 }
 prepareEpoch(state.t);
-setNorth(state.north);
+setReference(state.reference);
 let storedPanel = null;
 try {
   storedPanel = localStorage.getItem('polowat.panel');

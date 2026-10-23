@@ -91,6 +91,18 @@ export const FIGURES = {
     ],
     lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9]],
   },
+  // Mannap, the big bird: its head is Sirius, one wing reaches east to Procyon and the other,
+  // "broken" wing south to Canopus. Not a compass star (Holton et al. 2015, Oceanic Linguistics 54:2).
+  mannap: {
+    name: { polowat: 'Mannap', western: 'Big bird' },
+    about: 'The big bird. Its head is Sirius; one wing reaches east to Procyon, the other, “broken” wing south to Canopus. It rises in the south-east and is not a compass star. Mannap is not Mailap (Altair), which is often mistranslated as “big bird”.',
+    stars: [
+      { id: 'sirius', ra: 6.752481, dec: -16.716116, mag: -1.46 },
+      { id: 'procyon', ra: 7.655033, dec: 5.224993, mag: 0.34 },
+      { id: 'canopus', ra: 6.399197, dec: -52.695661, mag: -0.74 },
+    ],
+    lines: [[0, 1], [0, 2]],
+  },
 };
 
 // The 32 points, clockwise from north. `event` says how the star marks the point:
@@ -98,17 +110,17 @@ export const FIGURES = {
 // tilt45 = bearing of Acrux when the Southern Cross leans 45 degrees, pole = circumpolar.
 export const HOUSES = [
   { k: 0, star: 'polaris', event: 'pole', polowat: 'Wenewenen fuhemwakut', western: 'Polaris' },
-  { k: 1, star: 'kochab', event: 'rise', polowat: 'Tan Mailapanefang', western: 'Beta Ursa Minor' },
-  { k: 2, star: 'dubhe', event: 'rise', polowat: 'Tan Wheleo', western: 'Alpha Ursa Major' },
-  { k: 3, star: 'schedar', event: 'rise', polowat: 'Tan Iukunik', western: 'Alpha Cassiopeia' },
+  { k: 1, star: 'kochab', event: 'rise', polowat: 'Tan Mailapanefang', western: 'Beta Ursae Minoris' },
+  { k: 2, star: 'dubhe', event: 'rise', polowat: 'Tan Wheleo', western: 'Alpha Ursae Majoris' },
+  { k: 3, star: 'schedar', event: 'rise', polowat: 'Tan Iukunik', western: 'Alpha Cassiopeiae' },
   { k: 4, star: 'vega', event: 'rise', polowat: 'Tan Meol', western: 'Vega' },
   { k: 5, star: 'alcyone', event: 'rise', polowat: 'Tan Mwarigar', western: 'Pleiades' },
   { k: 6, star: 'aldebaran', event: 'rise', polowat: 'Tan Wuun', western: 'Aldebaran' },
-  { k: 7, star: 'tarazed', event: 'rise', polowat: 'Tan Paiyefang', western: 'Gamma Aquila' },
+  { k: 7, star: 'tarazed', event: 'rise', polowat: 'Tan Paiyefang', western: 'Gamma Aquilae' },
   { k: 8, star: 'altair', event: 'rise', polowat: 'Tan Mailap', western: 'Altair' },
-  { k: 9, star: 'alshain', event: 'rise', polowat: 'Tan Paiyeor', western: 'Beta Aquila' },
+  { k: 9, star: 'alshain', event: 'rise', polowat: 'Tan Paiyeor', western: 'Beta Aquilae' },
   { k: 10, star: 'alnilam', event: 'rise', polowat: 'Tan Elieol', western: 'Orion’s Belt' },
-  { k: 11, star: 'gienah', event: 'rise', polowat: 'Tan Haerpwol', western: 'Gamma Corvus' },
+  { k: 11, star: 'gienah', event: 'rise', polowat: 'Tan Haerpwol', western: 'Gamma Corvi' },
   { k: 12, star: 'antares', event: 'rise', polowat: 'Tan Tumwur', western: 'Antares' },
   { k: 13, star: 'shaula', event: 'rise', polowat: 'Tan Mahariuw', western: 'Shaula' },
   { k: 14, star: 'acrux', event: 'rise', polowat: 'Tan Ubw', western: 'Rising Crux' },
@@ -118,17 +130,17 @@ export const HOUSES = [
   { k: 18, star: 'acrux', event: 'set', polowat: 'Tolon Ubw', western: 'Setting Crux' },
   { k: 19, star: 'shaula', event: 'set', polowat: 'Tolon Mahariuw', western: 'Shaula' },
   { k: 20, star: 'antares', event: 'set', polowat: 'Tolon Tumwur', western: 'Antares' },
-  { k: 21, star: 'gienah', event: 'set', polowat: 'Tolon Haerpwol', western: 'Gamma Corvus' },
+  { k: 21, star: 'gienah', event: 'set', polowat: 'Tolon Haerpwol', western: 'Gamma Corvi' },
   { k: 22, star: 'alnilam', event: 'set', polowat: 'Tolon Elieol', western: 'Orion’s Belt' },
-  { k: 23, star: 'alshain', event: 'set', polowat: 'Tolon Paiyeor', western: 'Beta Aquila' },
+  { k: 23, star: 'alshain', event: 'set', polowat: 'Tolon Paiyeor', western: 'Beta Aquilae' },
   { k: 24, star: 'altair', event: 'set', polowat: 'Tolon Mailap', western: 'Altair' },
-  { k: 25, star: 'tarazed', event: 'set', polowat: 'Tolon Paiyefang', western: 'Gamma Aquila' },
+  { k: 25, star: 'tarazed', event: 'set', polowat: 'Tolon Paiyefang', western: 'Gamma Aquilae' },
   { k: 26, star: 'aldebaran', event: 'set', polowat: 'Tolon Wuun', western: 'Aldebaran' },
   { k: 27, star: 'alcyone', event: 'set', polowat: 'Tolon Mwarigar', western: 'Pleiades' },
   { k: 28, star: 'vega', event: 'set', polowat: 'Tolon Meol', western: 'Vega' },
-  { k: 29, star: 'schedar', event: 'set', polowat: 'Tolon Iukunik', western: 'Alpha Cassiopeia' },
-  { k: 30, star: 'dubhe', event: 'set', polowat: 'Tolon Wheleo', western: 'Alpha Ursa Major' },
-  { k: 31, star: 'kochab', event: 'set', polowat: 'Tolon Mailapanefang', western: 'Beta Ursa Minor' },
+  { k: 29, star: 'schedar', event: 'set', polowat: 'Tolon Iukunik', western: 'Alpha Cassiopeiae' },
+  { k: 30, star: 'dubhe', event: 'set', polowat: 'Tolon Wheleo', western: 'Alpha Ursae Majoris' },
+  { k: 31, star: 'kochab', event: 'set', polowat: 'Tolon Mailapanefang', western: 'Beta Ursae Minoris' },
 ];
 
 export const HOUSE_STEP = 360 / 32;

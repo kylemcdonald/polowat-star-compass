@@ -24,10 +24,16 @@ the Polowat spellings corrected.
   Polowat; the Moon includes the parallax of seeing it from the atoll instead of
   from the centre of the Earth.
 - **Constellations** overlays the Western (IAU) constellation figures and names.
-- **True / Magnetic** sets which north the 32 points are counted from. In
-  magnetic mode the points, cardinals, bearings and Δ values shift by the local
-  declination (about +3.1° E in 2026, from WMM2025), and a dashed marker shows
-  true north.
+- **Reference** sets what the 32 points are lined up on. **True** and
+  **Magnetic** set the compass's north. In magnetic mode the points, cardinals,
+  bearings and Δ values shift by the local declination (about +3.1° E in 2026,
+  from WMM2025). **Mailap** turns the whole compass so its east point, Tan
+  Mailap, sits where Altair rises (about 9° north of true east at Polowat).
+  Whenever the compass is turned, a dashed marker shows true north.
+- **Mannap**, the big bird, is drawn with its head at Sirius and its wings
+  reaching to Procyon and Canopus. It is not a compass star. Following Holton et
+  al., "East is Not a 'Big Bird'" (*Oceanic Linguistics* 54:2, 2015), Mailap
+  (Altair) is not glossed as "big bird" anywhere.
 - **Time** and **day of year** sliders work like the ones in tntm: dragging
   locks the pointer, so you can keep dragging past either end. Time carries on
   into the next or previous day; the day wraps around the year. Clicking jumps
@@ -64,8 +70,9 @@ an edit shows up on the launch after next. List any new file the page needs in
 `ASSETS` in `sw.js`.
 
 URL parameters for sharing a view: `t` (ISO time), `yaw`, `pitch`, `fov`,
-`play`, `mirror`, `select`, `constellations`, `north=magnetic`
-(e.g. `?select=acrux&yaw=180&north=magnetic`).
+`play`, `mirror`, `select` (a star id or `mannap`), `constellations`,
+`reference` (`true`, `magnetic` or `mailap`; the older `north=magnetic` still works)
+(e.g. `?select=acrux&yaw=180&reference=mailap`).
 
 ## Data
 

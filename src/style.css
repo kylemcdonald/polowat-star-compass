@@ -259,6 +259,11 @@ select {
   vertical-align: middle;
 }
 
+.info-panel p {
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+
 .info-panel dl {
   display: grid;
   grid-template-columns: auto 1fr;

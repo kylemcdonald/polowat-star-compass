@@ -57,10 +57,11 @@
               <button type="button" data-toggle="grid" title="Altitude / azimuth grid">Grid</button>
               <button type="button" data-toggle="table" title="Compass table">Table</button>
             </div>
-            <h3>North</h3>
-            <div class="button-group" id="north" title="Count the compass points from true or magnetic north">
-              <button type="button" data-north="true" class="is-active" title="Compass points from true north">True</button>
-              <button type="button" data-north="magnetic" title="Compass points from magnetic north (WMM2025 declination)">Magnetic</button>
+            <h3>Reference</h3>
+            <div class="button-group" id="reference" title="What the 32 compass points are lined up on">
+              <button type="button" data-reference="true" class="is-active" title="North of the compass at true north">True</button>
+              <button type="button" data-reference="magnetic" title="North of the compass at magnetic north (WMM2025 declination)">Magnetic</button>
+              <button type="button" data-reference="mailap" title="East of the compass (Tan Mailap) where Mailap, Altair, rises">Mailap</button>
             </div>
           </div>
           <div class="panel-page" data-page="about" id="about-page" hidden></div>
